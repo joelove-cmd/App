@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Auto Cell Network Reset</string>
+    <string name="enable_service">Enable Service</string>
+    <string name="airplane_mode_duration">Airplane Mode Duration (seconds)</string>
+</resources>
