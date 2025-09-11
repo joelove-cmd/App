@@ -110,21 +110,35 @@ public class NetworkService extends Service {
         updateNotification("Cellular signal lost — resetting network...");
         Log.d(TAG, "Enabling airplane mode.");
 
-        Settings.Global.putInt(getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 1);
-        Intent airplaneModeIntentOn = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-        airplaneModeIntentOn.putExtra("state", true);
-        sendBroadcast(airplaneModeIntentOn);
+        try {
+            Settings.Global.putInt(getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 1);
+            Intent airplaneModeIntentOn = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+            airplaneModeIntentOn.putExtra("state", true);
+            sendBroadcast(airplaneModeIntentOn);
+        } catch (SecurityException e) {
+            Log.e(TAG, "Failed to enable airplane mode. Make sure WRITE_SECURE_SETTINGS permission is granted.", e);
+            updateNotification("Error: Permission denied. Cannot reset network.");
+            isResetting = false; // Reset the flag so it can try again later
+            return; // Stop the reset process
+        }
+
 
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             Log.d(TAG, "Disabling airplane mode.");
-            Settings.Global.putInt(getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0);
-            Intent airplaneModeIntentOff = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-            airplaneModeIntentOff.putExtra("state", false);
-            sendBroadcast(airplaneModeIntentOff);
+            try {
+                Settings.Global.putInt(getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0);
+                Intent airplaneModeIntentOff = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+                airplaneModeIntentOff.putExtra("state", false);
+                sendBroadcast(airplaneModeIntentOff);
 
-            updateNotification("Monitoring cellular network state.");
-            isResetting = false;
-            Log.d(TAG, "Network reset complete.");
+                updateNotification("Monitoring cellular network state.");
+                isResetting = false;
+                Log.d(TAG, "Network reset complete.");
+            } catch (SecurityException e) {
+                Log.e(TAG, "Failed to disable airplane mode. Make sure WRITE_SECURE_SETTINGS permission is granted.", e);
+                updateNotification("Error: Permission denied. Cannot complete network reset.");
+                isResetting = false; // Reset the flag
+            }
         }, duration * 1000L);
     }
 
