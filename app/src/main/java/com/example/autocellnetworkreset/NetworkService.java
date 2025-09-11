@@ -35,7 +35,7 @@ public class NetworkService extends Service {
         super.onCreate();
         createNotificationChannel();
         telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        phoneStateListener = new PhoneStateListener(Looper.getMainExecutor()) {
+        phoneStateListener = new PhoneStateListener() {
             @Override
             public void onServiceStateChanged(ServiceState serviceState) {
                 super.onServiceStateChanged(serviceState);
