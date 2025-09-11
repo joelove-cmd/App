@@ -112,9 +112,8 @@ public class NetworkService extends Service {
 
         try {
             Settings.Global.putInt(getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 1);
-            Intent airplaneModeIntentOn = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-            airplaneModeIntentOn.putExtra("state", true);
-            sendBroadcast(airplaneModeIntentOn);
+            // The broadcast is not permitted on some versions of Android and causes a crash.
+            // The system will pick up the setting change without the broadcast.
         } catch (SecurityException e) {
             Log.e(TAG, "Failed to enable airplane mode. Make sure WRITE_SECURE_SETTINGS permission is granted.", e);
             updateNotification("Error: Permission denied. Cannot reset network.");
@@ -127,9 +126,8 @@ public class NetworkService extends Service {
             Log.d(TAG, "Disabling airplane mode.");
             try {
                 Settings.Global.putInt(getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0);
-                Intent airplaneModeIntentOff = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-                airplaneModeIntentOff.putExtra("state", false);
-                sendBroadcast(airplaneModeIntentOff);
+                // The broadcast is not permitted on some versions of Android and causes a crash.
+                // The system will pick up the setting change without the broadcast.
 
                 updateNotification("Monitoring cellular network state.");
                 isResetting = false;
