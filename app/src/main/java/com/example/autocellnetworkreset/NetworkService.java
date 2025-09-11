@@ -39,7 +39,27 @@ public class NetworkService extends Service {
             @Override
             public void onServiceStateChanged(ServiceState serviceState) {
                 super.onServiceStateChanged(serviceState);
-                Log.d(TAG, "Service state changed: " + serviceState.getState());
+                String stateString;
+                switch (serviceState.getState()) {
+                    case ServiceState.STATE_IN_SERVICE:
+                        stateString = "In Service";
+                        break;
+                    case ServiceState.STATE_OUT_OF_SERVICE:
+                        stateString = "Out of Service";
+                        break;
+                    case ServiceState.STATE_EMERGENCY_ONLY:
+                        stateString = "Emergency Only";
+                        break;
+                    case ServiceState.STATE_POWER_OFF:
+                        stateString = "Radio Off";
+                        break;
+                    default:
+                        stateString = "Unknown";
+                        break;
+                }
+                updateNotification("Monitoring | State: " + stateString);
+                Log.d(TAG, "Service state changed: " + serviceState.getState() + " (" + stateString + ")");
+
 
                 if (isResetting) {
                     Log.d(TAG, "Reset already in progress, ignoring state change.");
@@ -107,15 +127,14 @@ public class NetworkService extends Service {
 
     private void resetNetwork() {
         isResetting = true;
-        updateNotification("Cellular signal lost — resetting network...");
+        updateNotification("Signal Lost! Resetting network...");
         Log.d(TAG, "Enabling airplane mode.");
 
         try {
             Settings.Global.putInt(getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 1);
-            // The broadcast is not permitted on some versions of Android and causes a crash.
-            // The system will pick up the setting change without the broadcast.
-        } catch (SecurityException e) {
-            Log.e(TAG, "Failed to enable airplane mode. Make sure WRITE_SECURE_SETTINGS permission is granted.", e);
+            updateNotification("Airplane Mode ON... Waiting " + duration + "s.");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to enable airplane mode. Check permissions.", e);
             updateNotification("Error: Permission denied. Cannot reset network.");
             isResetting = false; // Reset the flag so it can try again later
             return; // Stop the reset process
@@ -125,15 +144,16 @@ public class NetworkService extends Service {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             Log.d(TAG, "Disabling airplane mode.");
             try {
+                updateNotification("Turning Airplane Mode OFF...");
                 Settings.Global.putInt(getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0);
-                // The broadcast is not permitted on some versions of Android and causes a crash.
-                // The system will pick up the setting change without the broadcast.
 
-                updateNotification("Monitoring cellular network state.");
+                // We don't reset the notification to "Monitoring" here immediately,
+                // because we want the user to see the "OFF" message.
+                // The next onServiceStateChanged event will update it.
                 isResetting = false;
                 Log.d(TAG, "Network reset complete.");
-            } catch (SecurityException e) {
-                Log.e(TAG, "Failed to disable airplane mode. Make sure WRITE_SECURE_SETTINGS permission is granted.", e);
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to disable airplane mode. Check permissions.", e);
                 updateNotification("Error: Permission denied. Cannot complete network reset.");
                 isResetting = false; // Reset the flag
             }
